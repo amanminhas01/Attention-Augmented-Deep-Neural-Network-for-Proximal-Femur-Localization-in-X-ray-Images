@@ -4,8 +4,7 @@ from config import DEVICE, NUM_CLASSES, NUM_WORKERS
 #from torchvision.models.detection.retinanet import retinanet_resnet152_fpn_v2
 from functools import partial
 from torchvision.models.detection.retinanet import RetinaNetClassificationHead
-from your_module import AADNN  
-#from DANET import DAModule
+from AADNN import AADNN  
 def create_model(num_classes=NUM_CLASSES):  #  retinanet_resnet50_2_fpn_v2  ,  retinanet_resnet152_fpn_v2  ,  retinanet_resnet101_2_fpn_v2
     model = torchvision.models.detection.retinanet.retinanet_resnet101_2_fpn_v2   (
           pretrained_backbone=True

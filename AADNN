@@ -1,0 +1,103 @@
+import torch
+from torch import nn
+import torch.nn.functional as F
+
+# Channel Attention Module from DANet
+class ChannelAttentionModule(nn.Module):
+    def __init__(self):
+        super(ChannelAttentionModule, self).__init__()
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x):
+        N, C, H, W = x.size()
+
+        # Channel correlation
+        query = x.view(N, C, -1)    # (N, C, H*W)
+        key = x.view(N, C, -1).permute(0, 2, 1)  # (N, H*W, C)
+        energy = torch.bmm(query, key)  # (N, C, C)
+
+        # Normalize the channel-wise attention
+        attention = self.softmax(energy)
+
+        # Apply the attention map
+        value = x.view(N, C, -1)
+        out = torch.bmm(attention, value)
+        out = out.view(N, C, H, W)
+
+        # Residual connection
+        out = out + x
+        return out
+
+
+# Position Attention Module with lattenout spetial features
+class PositionAttentionModule(nn.Module):
+    def __init__(self, channels):
+        super(PositionAttentionModule, self).__init__()
+        self.query_conv = nn.Conv2d(channels, channels // 8, kernel_size=1)
+        self.key_conv = nn.Conv2d(channels, channels // 8, kernel_size=1)
+        self.value_conv = nn.Conv2d(channels, channels, kernel_size=1)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x):
+        N, C, H, W = x.size()
+
+        # Create query, key, value tensors
+        query = self.query_conv(x).view(N, -1, H, W)  # (N, C', H, W)
+        key = self.key_conv(x).view(N, -1, H, W)  # (N, C', H, W)
+        value = self.value_conv(x)  # (N, C, H, W)
+
+        # Compute spatial correlation
+        query = query.permute(0, 2, 3, 1).contiguous().view(N, H * W, -1)  # (N, H*W, C')
+        key = key.permute(0, 2, 3, 1).contiguous().view(N, H * W, -1).permute(0, 2, 1)  # (N, C', H*W)
+        energy = torch.bmm(query, key)  # (N, H*W, H*W)
+        attention = self.softmax(energy)
+
+        # Apply the attention map
+        value = value.view(N, C, H * W)  # (N, C, H*W)
+        out = torch.bmm(value, attention.permute(0, 2, 1))  # (N, C, H*W)
+        out = out.view(N, C, H, W)
+
+        # Residual connection
+        out = out + x
+        return out
+
+
+class AttentionFusion(nn.Module):
+    def __init__(self, in_channels):
+        super(AttentionFusion, self).__init__()
+        # Using DANet's Channel and Position Attention modules
+        self.ca = ChannelAttentionModule()
+        self.pa = PositionAttentionModule(in_channels)
+
+        # Learnable weights for fusing channel and spatial attention
+        self.alpha = nn.Parameter(torch.ones(1))
+        self.beta = nn.Parameter(torch.ones(1))
+        self.gamma = nn.Parameter(torch.ones(1))  # Overall scaling factor
+
+    def forward(self, x):
+        # Channel and Position Attention
+        channel_att = self.ca(x)
+        spatial_att = self.pa(x)
+
+
+        fusion = (self.alpha *channel_att) + (self.beta * spatial_att)
+
+        # Overall scaling with residual connection
+        out =  self.gamma *(fusion + x)
+        return out
+
+
+class AADNN(nn.Module):
+    def __init__(self, channels):
+        super(AADNN, self).__init__()
+        self.attention_fusion = AttentionFusion(channels)
+
+    def forward(self, x):
+        return self.attention_fusion(x)
+
+
+if __name__ == '__main__':
+    input = torch.randn(50, 512, 7, 7)  # Example input tensor
+    model = AADNN(channels=512)
+    output = model(input)
+    print(output.shape)

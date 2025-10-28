@@ -1,0 +1,9 @@
+1. The Tukey HSD post-hoc test compares all pairs of models to check if their mean performance differences are statistically significant after ANOVA.
+2. Each horizontal line in the plot represents a pairwise comparison between two models.
+3. The dot marks the mean difference, and the horizontal bar shows the 95% confidence interval (CI).
+4. If the CI crosses zero, the difference is not statistically significant (no clear evidence one model outperforms the other).
+5. The models are grouped and color-coded (e.g., Proposed model, MobileNet variants, ResNet variants, DETR variants, etc.).
+6. The x-axis shows the mean difference in performance (positive or negative). A positive difference means the first model in the comparison performs better; a negative difference means the second model performs better.
+7. The Proposed model cluster (in green) appears toward the bottom, indicating multiple comparisons where it is tested against other models, and most intervals are close to or above zero — suggesting it generally performs on par or better than other architectures.
+
+The Tukey HSD post-hoc analysis was performed to statistically compare the mean performance differences among all evaluated models. Each horizontal line in the plot represents a pairwise comparison, where the central dot indicates the mean difference, and the horizontal bar denotes the 95% confidence interval. Intervals crossing the zero line indicate no significant difference between models, while those entirely above or below zero show significant superiority or inferiority. The models are color-coded for clarity, with each cluster representing comparisons involving a particular model family. The results demonstrate that the proposed model exhibits relatively higher or comparable performance to other architectures, as most of its mean differences are positive or near zero, indicating that its improvements are consistent and statistically validated across comparisons.
